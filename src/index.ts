@@ -12,6 +12,7 @@ const resolvers = {
 }
 
 const run = async () => {
+    //Como mencionado en la función de conexión, cambiar nombre de colecciones para que cuadre con su propia base de datos mongoDB.
     const coleccionUsers = (await connectMongo()).collection("UsersQL"); 
     const coleccionIngredientes = (await connectMongo()).collection("IngredientesQL"); 
     const coleccionRecetas = (await connectMongo()).collection("RecetasQL"); 

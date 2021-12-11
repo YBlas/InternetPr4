@@ -8,10 +8,12 @@ const ObjectId = require('mongodb').ObjectId;
 export const Query = {
     test: (): string => "Y yo estoy aquí probandote!",
 
+    //Se crea token único para la sesión guardado en las variables de entorno .env
     LogIn: async (parent: any, args: { email: string, pwd: string }, context: { coleccionUsers: Collection }) => {
         let UserDB: Usuario = await context.coleccionUsers.findOne({ email: args.email, pwd: args.pwd }) as Usuario;
         if (UserDB) {
             const token1 = uuidv4();
+            //Actualizamos token del usuario en la base de datos
             context.coleccionUsers.findOneAndUpdate({ email: args.email, pwd: args.pwd }, { $set: { token: token1 } });
             process.env.token = token1;
             console.log(process.env.token);
@@ -22,6 +24,7 @@ export const Query = {
         }
     },
 
+    //ELimina el token que identoficaba al usuario
     LogOut: (): string => {
         if (!process.env.token) {
             return "Usuario no loggeado"
@@ -76,6 +79,7 @@ export const Query = {
     },
 
     getRecipes: async (parent: any, args: { author: string, ingredient: string[] }, context: { coleccionRecetas: Collection }) => {
+        //En caso de no recibir ningún argumento devuelve todas las recetas
         if (!args.author && !args.ingredient) {
             const RecipesDB = await context.coleccionRecetas.find().toArray();
             const RecipesQL = RecipesDB.map(elem => {
@@ -89,6 +93,7 @@ export const Query = {
                 return itRecipe;
             })
             return RecipesQL;
+        //Si recibe solo el autor devuelve todas las recetas creadas por ese autor
         } else if (args.author && !args.ingredient) {
             var id = args.author;
             var good_id = new ObjectId(id);
@@ -104,6 +109,7 @@ export const Query = {
                 return itRecipe;
             })
             return RecipesQL;
+        //En caso de recibir un array de ingredientes devuelve todas las recetas que contengan todos esos ingredientes.
         } else if (!args.author && args.ingredient) {
             const RecipesDB = await context.coleccionRecetas.find({ ingredients: {$all: args.ingredient} }).toArray();
             const RecipesQL = RecipesDB.map(elem => {
@@ -117,6 +123,7 @@ export const Query = {
                 return itRecipe;
             })
             return RecipesQL;
+        //En caso de recibir tanto autor como ingrdeiente devuelve las recetas creadas por ese autor y que contengan toda la lista de ingredientes recibida.
         } else if (args.author && args.ingredient) {
             var id = args.author;
             var good_id = new ObjectId(id);

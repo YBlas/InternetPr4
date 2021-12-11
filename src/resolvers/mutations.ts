@@ -12,6 +12,7 @@ export const Mutation = {
         if (UserDB) {
             console.log(`Error, ya existe usuario con mail ${args.email}`);
         } else {
+            //Pondremos un token provisional inicial, pero este mismo se actualizará cada vez que iniciemos sesión con el usuario.
             context.coleccionUsers.insertOne({
                 email: args.email,
                 pwd: args.pwd,
@@ -19,7 +20,7 @@ export const Mutation = {
             })
             console.log(args.email);
         }
-
+        //Devolvemos los datos introducidos en la db para comprobar que se han registrado correctamente.
         UserDB = await context.coleccionUsers.findOne({ email: args.email }) as Usuario;
         return {
             id: UserDB._id,
@@ -28,6 +29,7 @@ export const Mutation = {
         }
     },
 
+    //Requiere estar logeado con un usuario previamente registrado
     AddIngredient: async (parent: any, args: { name: string }, context: { coleccionIngredientes: Collection, coleccionUsers: Collection }) => {
         if (!process.env.token) {
             console.log("Usuario no loggeado");
@@ -36,6 +38,7 @@ export const Mutation = {
             if (IngredienteDB) {
                 console.log(`Error, ya existe un ingrediente llamado ${args.name}`);
             } else {
+                //Accedemos al usuario actualmente logeado en la base de datos para definir el autor
                 let UserDB: Usuario = await context.coleccionUsers.findOne({ token: process.env.token }) as Usuario;
                 context.coleccionIngredientes.insertOne({
                     name: args.name,
@@ -83,6 +86,7 @@ export const Mutation = {
             console.log("Usuario no loggeado");
             return false;
         } else {
+            //Además de eliminar el usuario se eliminaran todas las recetas que tengan como autor al usuario
             let UserDB: Usuario = await context.coleccionUsers.findOne({ token: process.env.token }) as Usuario;
             var id = UserDB._id;
             var good_id = new ObjectId(id);
@@ -101,11 +105,13 @@ export const Mutation = {
             var id = args.id;
             var good_id = new ObjectId(id);
             var good_id2 = new ObjectId(UserDB._id);
+            //Solo se elimina si eres tu el autor y además el id es correcto
             context.coleccionRecetas.deleteOne({ _id: good_id, author: good_id2});
             return true;
         }
     },
 
+    //Al actualizar una receta se podrán modificar todos sus valores excepto el nombre, el cual se utilizará para identificar la misma.
     UpdateRecipe: async (parent: any, args: {name: string, description: string, ingredients: string[]}, context: { coleccionUsers: Collection, coleccionRecetas: Collection }) => {
         if (!process.env.token) {
             console.log("Usuario no loggeado");
@@ -135,6 +141,7 @@ export const Mutation = {
             var good_id = new ObjectId(id);
             const IngredientDB : Ingrediente = await context.coleccionIngredientes.findOne({ _id: good_id }) as Ingrediente;
             if(UserDB._id.toString === IngredientDB.author.toString){
+                //Se eliminan todas las recetas que contengan dicho ingrediente.
                 context.coleccionRecetas.deleteMany({ingredients: {$all: [IngredientDB.name]}});
                 context.coleccionIngredientes.deleteOne({name: IngredientDB.name});
                 return true;
@@ -146,6 +153,7 @@ export const Mutation = {
     }
 }
 
+//Encadenado de recetas para que cuando llegue la cadena de nombres en String de la db lo pase al tipo Ingredient de gql
 export const Recipe = {
     ingredients: async (parent: { ingredients: string[] }, args: any, context: { coleccionIngredientes: Collection, coleccionUsers: Collection }) => {
         const Ingredientes: Ingrediente[] = await Promise.all(parent.ingredients.map(async (elem) => {
