@@ -11,6 +11,7 @@ El programa funcionará con la base de datos actual pero al haber aislado la fun
 ### Ejecución del programa
 
 ***npm run dev***
+
 El puerto predefinido es el 6969, por lo que para utilizar la consola de Apollo tendrá que introducir en su navegador el url:
 
 ***http://localhost:6969/graphql***
